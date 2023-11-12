@@ -21,10 +21,10 @@ class CratPred(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.encoder_lstm = EncoderLstm(self.args)
-        self.agent_gnn = AgentGnn(self.args)
-        self.multihead_self_attention = MultiheadSelfAttention(self.args)
-        self.decoder_residual = DecoderResidual(self.args)
+        self.encoder_lstm = EncoderLstm(self.args)  # Encodes input data sequences using LSTM.
+        self.agent_gnn = AgentGnn(self.args)  # GNN for processing agent interactions.
+        self.multihead_self_attention = MultiheadSelfAttention(self.args)  # Applies multi-head self-attention mechanism.
+        self.decoder_residual = DecoderResidual(self.args)  # A series of residual layers for decoding the output.
 
         self.reg_loss = nn.SmoothL1Loss(reduction="none")
 
@@ -67,9 +67,9 @@ class CratPred(pl.LightningModule):
         parser_training.add_argument("--wd", type=float, default=0.01)
         parser_training.add_argument("--batch_size", type=int, default=32)
         parser_training.add_argument("--val_batch_size", type=int, default=32)
-        parser_training.add_argument("--workers", type=int, default=0)
-        parser_training.add_argument("--val_workers", type=int, default=0)
-        parser_training.add_argument("--gpus", type=int, default=1)
+        parser_training.add_argument("--workers", type=int, default=8)
+        parser_training.add_argument("--val_workers", type=int, default=8)
+        parser_training.add_argument("--gpus", type=int, default=0)
 
         parser_model = parent_parser.add_argument_group("model")
         parser_model.add_argument("--latent_size", type=int, default=128)
@@ -206,6 +206,18 @@ class CratPred(pl.LightningModule):
         self.log("ade_val", ade, prog_bar=True)
         self.log("fde_val", fde, prog_bar=True)
 
+    # def on_validation_epoch_end(self):
+    #     # Extract predictions
+    #     pred = [out[0] for out in self.validation_step_validation_outputs]
+    #     pred = np.concatenate(pred, 0)
+    #     gt = [out[1] for out in self.validation_step_validation_outputs]
+    #     gt = np.concatenate(gt, 0)
+    #     ade1, fde1, ade, fde = self.calc_prediction_metrics(pred, gt)
+    #     self.log("ade1_val", ade1, prog_bar=True)
+    #     self.log("fde1_val", fde1, prog_bar=True)
+    #     self.log("ade_val", ade, prog_bar=True)
+    #     self.log("fde_val", fde, prog_bar=True)
+
     def calc_prediction_metrics(self, preds, gts):
         # Calculate prediction error for each mode
         # Output has shape (batch_size, n_modes, n_timesteps)
@@ -289,7 +301,6 @@ class AgentGnn(nn.Module):
         # gets appended with the offsetted subgrah
         offset = 0
         for i in range(len(agents_per_sample)):
-
             num_nodes = agents_per_sample[i]
 
             adj_matrix = torch.ones((num_nodes, num_nodes))
@@ -348,7 +359,8 @@ class MultiheadSelfAttention(nn.Module):
             padded_att_in_swapped = torch.swapaxes(padded_att_in, 0, 1)
 
             padded_att_in_swapped, _ = self.multihead_attention(
-                padded_att_in_swapped, padded_att_in_swapped, padded_att_in_swapped, key_padding_mask=mask_inverted)
+                padded_att_in_swapped, padded_att_in_swapped, padded_att_in_swapped,
+                key_padding_mask=mask_inverted)
 
             padded_att_in_reswapped = torch.swapaxes(
                 padded_att_in_swapped, 0, 1)

@@ -82,5 +82,5 @@ python3 test.py --weight=/path/to/checkpoint.ckpt
 
 ## Generate Predictions on Test Set
 ```sh
-python3 test.py --weight=/path/to/checkpoint.ckpt --split=test
+python3 test.py --weight=/lightning_logs/version_7/checkpoints/epoch=71-loss_train=40.19-loss_val=14.66-ade1_val=1.42-fde1_val=3.12-ade_val=0.85-fde_val=1.45.ckpt --split=test
 ```

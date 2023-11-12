@@ -22,10 +22,18 @@ logging.getLogger("pytorch_lightning").setLevel(logging.INFO)
 parser = argparse.ArgumentParser()
 parser = CratPred.init_args(parser)
 
+parser.add_argument('--checkpoint_path', type=str, default=None, help='Path to a checkpoint file to resume training')
+
 
 def main():
     args = parser.parse_args()
 
+    if args.checkpoint_path:
+        full_checkpoint_path = os.path.join(root_path, 'lightning_logs/version_4/checkpoints', args.checkpoint_path)
+    else:
+        full_checkpoint_path = None
+
+    # Validation dataset
     dataset = ArgoCSVDataset(args.val_split, args.val_split_pre, args)
     val_loader = DataLoader(
         dataset,
@@ -35,6 +43,7 @@ def main():
         pin_memory=True
     )
 
+    # Training dataset
     dataset = ArgoCSVDataset(args.train_split, args.train_split_pre, args)
     train_loader = DataLoader(
         dataset,
@@ -52,14 +61,24 @@ def main():
         save_top_k=-1,
     )
 
-    model = CratPred(args)
+    # model = CratPred(args)
+
+    if full_checkpoint_path and os.path.isfile(full_checkpoint_path):
+        model = CratPred.load_from_checkpoint(full_checkpoint_path, args=args)
+    else:
+        model = CratPred(args)
 
     trainer = pl.Trainer(
         default_root_dir=log_dir,
         callbacks=[checkpoint_callback],
         gpus=args.gpus,
         weights_save_path=None,
-        max_epochs=args.num_epochs
+        max_epochs=args.num_epochs,
+        accelerator="cpu",
+        resume_from_checkpoint=full_checkpoint_path if full_checkpoint_path and os.path.isfile(
+            full_checkpoint_path) else None
+
+        # device=1
     )
 
     trainer.fit(model, train_loader, val_loader)
@@ -67,3 +86,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # Type the following command in the terminal to run training:
+    # Remember to change full_checkpoint_path if you want to resume training
+    # python train.py --checkpoint_path epoch=1-loss_train=51.10-loss_val=54.29-ade1_val=2.02-fde1_val=4.38-ade_val=2.02-fde_val=4.24.ckpt
