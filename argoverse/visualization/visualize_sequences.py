@@ -86,6 +86,7 @@ def viz_sequence(
     plt.ylabel("Map Y")
 
     color_dict = {"AGENT": "#d33e4c", "OTHERS": "#d3e8ef", "AV": "#007672"}
+    # Color code OBJECT_TYPE
     object_type_tracker: Dict[int, int] = defaultdict(int)
 
     # Plot all the tracks up till current frame

@@ -3,6 +3,7 @@
 """This module evaluates the forecasted trajectories against the ground truth."""
 
 import math
+import pickle
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -87,6 +88,7 @@ def get_displacement_errors_and_miss_rate(
     min_ade, prob_min_ade, brier_min_ade = [], [], []
     min_fde, prob_min_fde, brier_min_fde = [], [], []
     n_misses, prob_n_misses = [], []
+    saved_pred_idx = {}  # Includes both prediction and ground truth trajectories
     for k, v in gt_trajectories.items():
         curr_min_ade = float("inf")
         curr_min_fde = float("inf")
@@ -115,6 +117,9 @@ def get_displacement_errors_and_miss_rate(
         min_fde.append(curr_min_fde)
         n_misses.append(curr_min_fde > miss_threshold)
 
+        # Store the selected pruned_trajectory and v in the dictionary
+        saved_pred_idx[k] = min_idx
+
         if forecasted_probabilities is not None:
             prob_n_misses.append(1.0 if curr_min_fde > miss_threshold else (1.0 - pruned_probabilities[min_idx]))
             prob_min_ade.append(
@@ -133,6 +138,10 @@ def get_displacement_errors_and_miss_rate(
                 + curr_min_fde
             )
             brier_min_fde.append((1 - pruned_probabilities[min_idx]) ** 2 + curr_min_fde)
+
+    # After the loop, save the dictionary to a .pkl file
+    with open('result_data/saved_pred_idx.pkl', 'wb') as f:
+        pickle.dump(saved_pred_idx, f)
 
     metric_results["minADE"] = sum(min_ade) / len(min_ade)
     metric_results["minFDE"] = sum(min_fde) / len(min_fde)
