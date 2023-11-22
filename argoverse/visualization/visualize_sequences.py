@@ -152,6 +152,6 @@ def viz_sequence(
     )
     black_triangle = mlines.Line2D([], [], color="black", marker="^", linestyle="None", markersize=7, label="AV")
 
-    plt.axis("off")
+    plt.axis("on")
     if show:
         plt.show()
